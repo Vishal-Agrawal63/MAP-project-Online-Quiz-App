@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QuizCard from '../components/QuizCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Backend URL
+const API_BASE_URL = '/api'; // Use a relative path
 
 function QuizSelectionPage() {
   const [quizzes, setQuizzes] = useState([]);

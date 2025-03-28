@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Backend URL
+const API_BASE_URL = '/api'; // Use a relative path
 
 function LeaderboardPage() {
   const [leaderboardData, setLeaderboardData] = useState([]);

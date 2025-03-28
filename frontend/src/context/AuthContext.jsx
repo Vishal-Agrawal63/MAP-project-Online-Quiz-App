@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 // Remove mockUsers import: import mockUsers from '../data/users.json';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Backend URL
+const API_BASE_URL = '/api'; // Use a relative path
 
 const AuthContext = createContext(null);
 

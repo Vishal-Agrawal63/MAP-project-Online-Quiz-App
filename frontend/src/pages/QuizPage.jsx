@@ -5,7 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ResultsPage from './ResultsPage'; // We'll render results directly for simplicity here
 import { useAuth } from '../context/AuthContext'; // Import useAuth to get userId
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Backend URL
+const API_BASE_URL = '/api'; // Use a relative path
 
 function QuizPage() {
   const { quizId } = useParams();
