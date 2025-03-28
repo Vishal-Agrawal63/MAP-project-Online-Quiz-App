@@ -31,36 +31,6 @@
         "text": "What is a 'Broker' in Kafka?",
         "options": ["A client application", "A Kafka server that stores data", "A message format", "A monitoring tool"],
         "correctAnswer": "A Kafka server that stores data"
-      },
-      {
-        "id": "kf_q6",
-        "text": "Messages within a Kafka topic partition are ordered. True or False?",
-        "options": ["True", "False"],
-        "correctAnswer": "True"
-      },
-      {
-        "id": "kf_q7",
-        "text": "What is a 'Partition' in a Kafka topic?",
-        "options": ["A backup copy of a topic", "A way to split a topic's data across multiple brokers", "A type of message key", "A consumer configuration"],
-        "correctAnswer": "A way to split a topic's data across multiple brokers"
-      },
-      {
-        "id": "kf_q8",
-        "text": "What does 'Offset' signify in Kafka?",
-        "options": ["The time a message was sent", "The size of a message", "A unique identifier for a record within a partition", "The number of brokers in the cluster"],
-        "correctAnswer": "A unique identifier for a record within a partition"
-      },
-      {
-        "id": "kf_q9",
-        "text": "Which component was traditionally used by Kafka for cluster management and coordination (though being replaced by KRaft)?",
-        "options": ["Docker Swarm", "Kubernetes", "Apache ZooKeeper", "Consul"],
-        "correctAnswer": "Apache ZooKeeper"
-      },
-      {
-        "id": "kf_q10",
-        "text": "What is a key benefit of Kafka's architecture?",
-        "options": ["Simple single-node setup", "Tight coupling between producers and consumers", "High throughput and fault tolerance", "Built-in graphical user interface"],
-        "correctAnswer": "High throughput and fault tolerance"
       }
     ]
   }

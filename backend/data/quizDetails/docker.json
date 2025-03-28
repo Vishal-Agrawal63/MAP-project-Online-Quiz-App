@@ -31,36 +31,6 @@
         "text": "What command is used to build a Docker image from a Dockerfile?",
         "options": ["docker run", "docker push", "docker build", "docker create"],
         "correctAnswer": "docker build"
-      },
-      {
-        "id": "dk_q6",
-        "text": "What command is used to run a Docker container from an image?",
-        "options": ["docker start", "docker run", "docker exec", "docker build"],
-        "correctAnswer": "docker run"
-      },
-      {
-        "id": "dk_q7",
-        "text": "What is the purpose of Docker Hub?",
-        "options": ["To monitor running containers", "A cloud-based registry service for finding and sharing container images", "To manage Docker networks", "To build Docker images locally"],
-        "correctAnswer": "A cloud-based registry service for finding and sharing container images"
-      },
-      {
-        "id": "dk_q8",
-        "text": "How can data persistence be achieved for Docker containers?",
-        "options": ["Only by committing changes to the image", "Using Docker Volumes or Bind Mounts", "Containers persist data automatically", "By increasing container memory"],
-        "correctAnswer": "Using Docker Volumes or Bind Mounts"
-      },
-      {
-        "id": "dk_q9",
-        "text": "What does the `EXPOSE` instruction in a Dockerfile do?",
-        "options": ["Maps a host port to a container port", "Downloads the image from Docker Hub", "Informs Docker that the container listens on the specified network ports at runtime (documentation)", "Installs software inside the container"],
-        "correctAnswer": "Informs Docker that the container listens on the specified network ports at runtime (documentation)"
-      },
-      {
-        "id": "dk_q10",
-        "text": "What is `docker-compose` used for?",
-        "options": ["Building single Docker images", "Defining and running multi-container Docker applications", "Debugging running containers", "Managing Docker Swarm clusters"],
-        "correctAnswer": "Defining and running multi-container Docker applications"
       }
     ]
   }

@@ -4,42 +4,42 @@
     "id": "general_knowledge",
     "title": "General Knowledge Challenge",
     "description": "Test your knowledge across various topics.",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "react_basics",
     "title": "React Basics Quiz",
     "description": "How well do you know the fundamentals of React?",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "kafka",
     "title": "Apache Kafka Fundamentals",
     "description": "Explore the core concepts of the Kafka distributed streaming platform.",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "docker",
     "title": "Docker Essentials",
     "description": "Test your understanding of Docker containerization.",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "grpc",
     "title": "gRPC Concepts",
     "description": "Learn about the high-performance RPC framework.",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "aws",
     "title": "AWS Core Services",
     "description": "Check your knowledge of fundamental AWS cloud services.",
-    "questionCount": 10
+    "questionCount": 5
   },
   {
     "id": "api",
     "title": "API Fundamentals",
     "description": "Understand the basics of Application Programming Interfaces.",
-    "questionCount": 10
+    "questionCount": 5
   }
 ]

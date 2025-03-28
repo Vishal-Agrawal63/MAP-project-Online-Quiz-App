@@ -31,36 +31,6 @@
       "text": "What gas do plants absorb from the atmosphere?",
       "options": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"],
       "correctAnswer": "Carbon Dioxide"
-    },
-    {
-      "id": "gk_q6",
-      "text": "In which country would you find the Eiffel Tower?",
-      "options": ["Italy", "Spain", "France", "Germany"],
-      "correctAnswer": "France"
-    },
-    {
-      "id": "gk_q7",
-      "text": "What is the chemical symbol for Gold?",
-      "options": ["Go", "Ag", "Au", "Gd"],
-      "correctAnswer": "Au"
-    },
-    {
-      "id": "gk_q8",
-      "text": "Who wrote the play 'Romeo and Juliet'?",
-      "options": ["Charles Dickens", "Jane Austen", "William Shakespeare", "Mark Twain"],
-      "correctAnswer": "William Shakespeare"
-    },
-    {
-      "id": "gk_q9",
-      "text": "What is the longest river in the world?",
-      "options": ["Amazon River", "Nile River", "Mississippi River", "Yangtze River"],
-      "correctAnswer": "Nile River"
-    },
-    {
-      "id": "gk_q10",
-      "text": "What force keeps planets in orbit around the sun?",
-      "options": ["Magnetism", "Friction", "Gravity", "Tension"],
-      "correctAnswer": "Gravity"
     }
   ]
 }

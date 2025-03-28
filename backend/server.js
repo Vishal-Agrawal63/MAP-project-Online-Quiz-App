@@ -158,7 +158,7 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
-// POST /api/quizzes/:quizId/submit - Handle quiz submission AND SAVE TO LEADERBOARD
+// POST /api/quizzes/:quizId/submit - Handle quiz submission AND UPDATE/SAVE TO LEADERBOARD
 app.post('/api/quizzes/:quizId/submit', async (req, res) => {
     const { quizId } = req.params;
     const { userAnswers, userId } = req.body;
@@ -175,6 +175,7 @@ app.post('/api/quizzes/:quizId/submit', async (req, res) => {
     }
 
     const quizFilePath = path.join(dataPath, 'quizDetails', `${quizId}.json`);
+    let responseMessage = "Score calculated."; // Default response message
 
     try {
         // 1. Get correct answers for the quiz
@@ -206,41 +207,72 @@ app.post('/api/quizzes/:quizId/submit', async (req, res) => {
         }
 
 
-        // 4. Read, Update, and Write Leaderboard
+        // --- 4. Read, Check for Existing Entry, Update/Add, and Write Leaderboard ---
         try {
             let leaderboardData = await readJsonFile(leaderboardPath, []);
-
-            const newEntry = {
-                userId: userId,
-                username: username,
-                quizId: quizId,
-                score: calculatedScore,
-                totalQuestions: totalQuestions,
-                timestamp: new Date().toISOString() // Add timestamp for potential future use
-            };
-
-            leaderboardData.push(newEntry);
-
-            await writeJsonFile(leaderboardPath, leaderboardData);
-            console.log(`Leaderboard updated for ${username} on quiz ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
-
+            let updatedExisting = false;
+            let scoreWasHigher = false;
+        
+            // Find the index of an existing entry for this user and quiz
+            const existingEntryIndex = leaderboardData.findIndex(entry =>
+                entry.userId === userId && entry.quizId === quizId
+            );
+        
+            if (existingEntryIndex !== -1) {
+                // Entry found - Check if the new score is higher
+                if (calculatedScore > leaderboardData[existingEntryIndex].score) {
+                    // Update existing entry
+                    leaderboardData[existingEntryIndex].score = calculatedScore;
+                    leaderboardData[existingEntryIndex].totalQuestions = totalQuestions; // Update just in case quiz changed
+                    leaderboardData[existingEntryIndex].timestamp = new Date().toISOString();
+                    leaderboardData[existingEntryIndex].username = username; // Update username in case it changed
+                    updatedExisting = true;
+                    scoreWasHigher = true;
+                    responseMessage = "Score calculated. Leaderboard updated with higher score.";
+                    console.log(`Leaderboard updated for ${username} on quiz ${quizId}. New Score: ${calculatedScore}/${totalQuestions}`);
+                } else {
+                    // Score is not higher, do not update
+                    updatedExisting = true; // We found an entry, but didn't update score
+                    responseMessage = "Score calculated. Previous score on leaderboard was higher or equal.";
+                    console.log(`Leaderboard not updated for ${username} on quiz ${quizId}. Score ${calculatedScore}/${totalQuestions} is not higher than existing ${leaderboardData[existingEntryIndex].score}/${leaderboardData[existingEntryIndex].totalQuestions}.`);
+                }
+            } else {
+                // No existing entry found - Add a new one
+                const newEntry = {
+                    userId: userId,
+                    username: username,
+                    quizId: quizId,
+                    score: calculatedScore,
+                    totalQuestions: totalQuestions,
+                    timestamp: new Date().toISOString()
+                };
+                leaderboardData.push(newEntry);
+                responseMessage = "Score calculated. New entry added to leaderboard.";
+                console.log(`New leaderboard entry added for ${username} on quiz ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
+            }
+        
+            // Write the potentially modified leaderboard back to the file only if something changed or was added
+            if (scoreWasHigher || !updatedExisting) { // Write if score was updated OR if it's a completely new entry
+                await writeJsonFile(leaderboardPath, leaderboardData);
+            }
+        
         } catch (leaderboardErr) {
-             // Log the error but continue to respond to the user
-            console.error(`!!! Failed to update leaderboard file: ${leaderboardPath}`, leaderboardErr);
-            // Don't throw here, just notify failure in response maybe?
+            console.error(`!!! Failed to read or write leaderboard file: ${leaderboardPath}`, leaderboardErr);
+            // Include error in response message if write failed
+            responseMessage = "Score calculated, but failed to update leaderboard file.";
         }
 
-        // 5. Respond with the calculated score
+        // --- 5. Respond with the calculated score and status message ---
         res.json({
             quizId: quizId,
             score: calculatedScore,
             totalQuestions: totalQuestions,
-            message: "Score calculated and leaderboard update attempted." // Updated message
+            message: responseMessage
         });
 
     } catch (err) {
         // Handle errors fetching quiz details or other unexpected errors
-        if (err.code === 'ENOENT' && err.path === quizFilePath) {
+        if (err.code === 'ENOENT' && err.path && err.path.includes(quizId)) { // Check path includes quizId loosely
             res.status(404).json({ message: `Quiz '${quizId}' not found for submission` });
         } else {
             console.error(`Error processing submission for quiz ${quizId}:`, err);
