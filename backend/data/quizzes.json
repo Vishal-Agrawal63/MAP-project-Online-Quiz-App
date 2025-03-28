@@ -1,0 +1,14 @@
+[
+    {
+      "id": "general_knowledge",
+      "title": "General Knowledge Challenge",
+      "description": "Test your knowledge across various topics.",
+      "questionCount": 3
+    },
+    {
+      "id": "react_basics",
+      "title": "React Basics Quiz",
+      "description": "How well do you know the fundamentals of React?",
+      "questionCount": 2
+    }
+  ]

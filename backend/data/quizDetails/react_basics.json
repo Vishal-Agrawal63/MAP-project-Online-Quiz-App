@@ -1,0 +1,18 @@
+{
+    "id": "react_basics",
+    "title": "React Basics Quiz",
+    "questions": [
+      {
+        "id": "rb_q1",
+        "text": "What is JSX?",
+        "options": ["JavaScript XML", "JavaScript Extension", "JSON Syntax Extension", "JavaScript Xylophone"],
+        "correctAnswer": "JavaScript XML"
+      },
+      {
+        "id": "rb_q2",
+        "text": "Which hook is used to manage state in a functional component?",
+        "options": ["useEffect", "useContext", "useState", "useReducer"],
+        "correctAnswer": "useState"
+      }
+    ]
+  }

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "user1",
+    "username": "testuser",
+    "password": "password123"
+  },
+  {
+    "id": "user2",
+    "username": "quizmaster",
+    "password": "password456"
+  },
+  {
+    "id": "user_1743158424954",
+    "username": "vishal",
+    "password": "vishal123"
+  }
+]

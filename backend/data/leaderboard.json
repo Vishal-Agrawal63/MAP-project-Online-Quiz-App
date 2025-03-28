@@ -1,0 +1,39 @@
+[
+  {
+    "userId": "user2",
+    "username": "quizmaster",
+    "quizId": "general_knowledge",
+    "score": 3,
+    "totalQuestions": 3
+  },
+  {
+    "userId": "user1",
+    "username": "testuser",
+    "quizId": "react_basics",
+    "score": 1,
+    "totalQuestions": 2
+  },
+  {
+    "userId": "user1",
+    "username": "testuser",
+    "quizId": "general_knowledge",
+    "score": 2,
+    "totalQuestions": 3
+  },
+  {
+    "userId": "user_1743158424954",
+    "username": "vishal",
+    "quizId": "general_knowledge",
+    "score": 2,
+    "totalQuestions": 3,
+    "timestamp": "2025-03-28T10:40:35.105Z"
+  },
+  {
+    "userId": "user_1743158424954",
+    "username": "vishal",
+    "quizId": "react_basics",
+    "score": 1,
+    "totalQuestions": 2,
+    "timestamp": "2025-03-28T10:41:01.114Z"
+  }
+]
