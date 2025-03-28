@@ -1,0 +1,66 @@
+{
+    "id": "docker",
+    "title": "Docker Essentials",
+    "questions": [
+      {
+        "id": "dk_q1",
+        "text": "What is Docker primarily used for?",
+        "options": ["Running virtual machines", "Managing databases", "Containerizing applications", "Writing code"],
+        "correctAnswer": "Containerizing applications"
+      },
+      {
+        "id": "dk_q2",
+        "text": "What is a Docker 'Image'?",
+        "options": ["A running instance of an application", "A lightweight, standalone, executable package including code, runtime, libraries, and settings", "A virtual machine disk file", "A network configuration"],
+        "correctAnswer": "A lightweight, standalone, executable package including code, runtime, libraries, and settings"
+      },
+      {
+        "id": "dk_q3",
+        "text": "What is a Docker 'Container'?",
+        "options": ["A template for creating applications", "A running instance of a Docker image", "The Docker command-line tool", "A storage volume"],
+        "correctAnswer": "A running instance of a Docker image"
+      },
+      {
+        "id": "dk_q4",
+        "text": "Which file contains instructions for building a Docker image?",
+        "options": ["docker-compose.yml", "Dockerfile", "package.json", "config.txt"],
+        "correctAnswer": "Dockerfile"
+      },
+      {
+        "id": "dk_q5",
+        "text": "What command is used to build a Docker image from a Dockerfile?",
+        "options": ["docker run", "docker push", "docker build", "docker create"],
+        "correctAnswer": "docker build"
+      },
+      {
+        "id": "dk_q6",
+        "text": "What command is used to run a Docker container from an image?",
+        "options": ["docker start", "docker run", "docker exec", "docker build"],
+        "correctAnswer": "docker run"
+      },
+      {
+        "id": "dk_q7",
+        "text": "What is the purpose of Docker Hub?",
+        "options": ["To monitor running containers", "A cloud-based registry service for finding and sharing container images", "To manage Docker networks", "To build Docker images locally"],
+        "correctAnswer": "A cloud-based registry service for finding and sharing container images"
+      },
+      {
+        "id": "dk_q8",
+        "text": "How can data persistence be achieved for Docker containers?",
+        "options": ["Only by committing changes to the image", "Using Docker Volumes or Bind Mounts", "Containers persist data automatically", "By increasing container memory"],
+        "correctAnswer": "Using Docker Volumes or Bind Mounts"
+      },
+      {
+        "id": "dk_q9",
+        "text": "What does the `EXPOSE` instruction in a Dockerfile do?",
+        "options": ["Maps a host port to a container port", "Downloads the image from Docker Hub", "Informs Docker that the container listens on the specified network ports at runtime (documentation)", "Installs software inside the container"],
+        "correctAnswer": "Informs Docker that the container listens on the specified network ports at runtime (documentation)"
+      },
+      {
+        "id": "dk_q10",
+        "text": "What is `docker-compose` used for?",
+        "options": ["Building single Docker images", "Defining and running multi-container Docker applications", "Debugging running containers", "Managing Docker Swarm clusters"],
+        "correctAnswer": "Defining and running multi-container Docker applications"
+      }
+    ]
+  }

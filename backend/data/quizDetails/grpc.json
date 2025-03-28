@@ -1,0 +1,66 @@
+{
+    "id": "grpc",
+    "title": "gRPC Concepts",
+    "questions": [
+      {
+        "id": "grpc_q1",
+        "text": "What is gRPC?",
+        "options": ["A database query language", "A JavaScript framework", "A high-performance, open-source universal RPC framework", "A messaging queue system"],
+        "correctAnswer": "A high-performance, open-source universal RPC framework"
+      },
+      {
+        "id": "grpc_q2",
+        "text": "What transport protocol does gRPC typically use?",
+        "options": ["HTTP/1.1", "TCP", "UDP", "HTTP/2"],
+        "correctAnswer": "HTTP/2"
+      },
+      {
+        "id": "grpc_q3",
+        "text": "What is the default Interface Definition Language (IDL) for gRPC?",
+        "options": ["JSON Schema", "XML", "Protocol Buffers (protobuf)", "YAML"],
+        "correctAnswer": "Protocol Buffers (protobuf)"
+      },
+      {
+        "id": "grpc_q4",
+        "text": "What are Protocol Buffers used for in gRPC?",
+        "options": ["Defining the service interface and the structure of the payload messages", "Handling network connections", "Authenticating clients", "Logging requests"],
+        "correctAnswer": "Defining the service interface and the structure of the payload messages"
+      },
+      {
+        "id": "grpc_q5",
+        "text": "Which communication pattern involves a single request from the client followed by a single response from the server?",
+        "options": ["Server streaming RPC", "Client streaming RPC", "Bidirectional streaming RPC", "Unary RPC"],
+        "correctAnswer": "Unary RPC"
+      },
+      {
+        "id": "grpc_q6",
+        "text": "Which communication pattern allows the server to send back a sequence of responses after getting a client's request?",
+        "options": ["Unary RPC", "Server streaming RPC", "Client streaming RPC", "Bidirectional streaming RPC"],
+        "correctAnswer": "Server streaming RPC"
+      },
+      {
+        "id": "grpc_q7",
+        "text": "Compared to REST APIs using JSON over HTTP/1.1, gRPC is generally considered:",
+        "options": ["Less performant and uses more bandwidth", "More performant and uses less bandwidth", "Similar in performance and bandwidth usage", "Only suitable for browser-to-server communication"],
+        "correctAnswer": "More performant and uses less bandwidth"
+      },
+      {
+        "id": "grpc_q8",
+        "text": "What feature of HTTP/2 is heavily utilized by gRPC for efficiency?",
+        "options": ["Text-based headers", "Single request/response per connection", "Multiplexing (multiple requests/responses over a single connection)", "Caching directives"],
+        "correctAnswer": "Multiplexing (multiple requests/responses over a single connection)"
+      },
+      {
+        "id": "grpc_q9",
+        "text": "gRPC supports code generation in multiple languages. True or False?",
+        "options": ["True", "False"],
+        "correctAnswer": "True"
+      },
+      {
+        "id": "grpc_q10",
+        "text": "What is a 'channel' in gRPC?",
+        "options": ["A server-side component", "A connection to a gRPC server endpoint", "A specific message type", "A stream of data"],
+        "correctAnswer": "A connection to a gRPC server endpoint"
+      }
+    ]
+  }

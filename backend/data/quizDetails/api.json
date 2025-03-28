@@ -1,0 +1,66 @@
+{
+    "id": "api",
+    "title": "API Fundamentals",
+    "questions": [
+      {
+        "id": "api_q1",
+        "text": "What does API stand for?",
+        "options": ["Application Programming Interface", "Automated Program Interaction", "Application Process Integration", "Applied Programming Interface"],
+        "correctAnswer": "Application Programming Interface"
+      },
+      {
+        "id": "api_q2",
+        "text": "What is the primary purpose of an API?",
+        "options": ["To define the visual style of an application", "To store user data securely", "To allow different software applications to communicate with each other", "To manage server hardware"],
+        "correctAnswer": "To allow different software applications to communicate with each other"
+      },
+      {
+        "id": "api_q3",
+        "text": "Which architectural style is commonly used for web APIs, using standard HTTP methods?",
+        "options": ["SOAP", "gRPC", "REST", "GraphQL"],
+        "correctAnswer": "REST"
+      },
+      {
+        "id": "api_q4",
+        "text": "In a REST API, what HTTP method is typically used to retrieve data from a server?",
+        "options": ["POST", "PUT", "DELETE", "GET"],
+        "correctAnswer": "GET"
+      },
+      {
+        "id": "api_q5",
+        "text": "What HTTP method is typically used to create a new resource on the server?",
+        "options": ["GET", "POST", "PATCH", "DELETE"],
+        "correctAnswer": "POST"
+      },
+      {
+        "id": "api_q6",
+        "text": "What is an API 'Endpoint'?",
+        "options": ["The client application making the request", "A specific URL where an API can be accessed", "The format of the data returned", "An authentication token"],
+        "correctAnswer": "A specific URL where an API can be accessed"
+      },
+      {
+        "id": "api_q7",
+        "text": "What does an HTTP Status Code like '200 OK' indicate?",
+        "options": ["The request failed due to a client error", "The request was successful", "The server encountered an error", "The requested resource was not found"],
+        "correctAnswer": "The request was successful"
+      },
+      {
+        "id": "api_q8",
+        "text": "What does an HTTP Status Code like '404 Not Found' indicate?",
+        "options": ["The request was successful", "The server requires authentication", "The server could not find the requested resource", "The server encountered an internal error"],
+        "correctAnswer": "The server could not find the requested resource"
+      },
+      {
+        "id": "api_q9",
+        "text": "Which data format is most commonly used for sending and receiving data in modern web APIs?",
+        "options": ["XML", "HTML", "CSV", "JSON"],
+        "correctAnswer": "JSON"
+      },
+      {
+        "id": "api_q10",
+        "text": "What is API 'Authentication'?",
+        "options": ["Defining the structure of API requests", "Verifying the identity of the client making the API request", "Limiting the number of requests a client can make", "Formatting the data returned by the API"],
+        "correctAnswer": "Verifying the identity of the client making the API request"
+      }
+    ]
+  }

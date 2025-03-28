@@ -1,18 +1,67 @@
+
 {
-    "id": "react_basics",
-    "title": "React Basics Quiz",
-    "questions": [
-      {
-        "id": "rb_q1",
-        "text": "What is JSX?",
-        "options": ["JavaScript XML", "JavaScript Extension", "JSON Syntax Extension", "JavaScript Xylophone"],
-        "correctAnswer": "JavaScript XML"
-      },
-      {
-        "id": "rb_q2",
-        "text": "Which hook is used to manage state in a functional component?",
-        "options": ["useEffect", "useContext", "useState", "useReducer"],
-        "correctAnswer": "useState"
-      }
-    ]
-  }
+  "id": "react_basics",
+  "title": "React Basics Quiz",
+  "questions": [
+    {
+      "id": "rb_q1",
+      "text": "What is JSX?",
+      "options": ["JavaScript XML", "JavaScript Extension", "JSON Syntax Extension", "JavaScript Xylophone"],
+      "correctAnswer": "JavaScript XML"
+    },
+    {
+      "id": "rb_q2",
+      "text": "Which hook is used to manage state in a functional component?",
+      "options": ["useEffect", "useContext", "useState", "useReducer"],
+      "correctAnswer": "useState"
+    },
+    {
+      "id": "rb_q3",
+      "text": "How do you pass data from a parent component to a child component?",
+      "options": ["State", "Context", "Props", "Refs"],
+      "correctAnswer": "Props"
+    },
+    {
+      "id": "rb_q4",
+      "text": "What is the purpose of the `useEffect` hook?",
+      "options": ["To manage component state", "To perform side effects", "To create context", "To handle routing"],
+      "correctAnswer": "To perform side effects"
+    },
+    {
+      "id": "rb_q5",
+      "text": "In React, what must be unique among sibling elements when rendering a list?",
+      "options": ["className", "id", "key prop", "style"],
+      "correctAnswer": "key prop"
+    },
+    {
+      "id": "rb_q6",
+      "text": "What is Virtual DOM?",
+      "options": ["A direct representation of the browser DOM", "A JavaScript object representing the DOM", "A type of CSS framework", "A browser extension"],
+      "correctAnswer": "A JavaScript object representing the DOM"
+    },
+    {
+      "id": "rb_q7",
+      "text": "How do you handle events (like button clicks) in React?",
+      "options": ["Using native addEventListener", "Using event props like onClick", "Using CSS selectors", "Using refs"],
+      "correctAnswer": "Using event props like onClick"
+    },
+    {
+      "id": "rb_q8",
+      "text": "Which command is commonly used to create a new React project using Create React App?",
+      "options": ["npm init react", "npx create-react-app my-app", "npm new react-app", "create react project"],
+      "correctAnswer": "npx create-react-app my-app"
+    },
+    {
+      "id": "rb_q9",
+      "text": "What is used to share state between components without passing props down manually at every level?",
+      "options": ["useState hook", "Props drilling", "Context API", "Local Storage"],
+      "correctAnswer": "Context API"
+    },
+    {
+      "id": "rb_q10",
+      "text": "Conditional rendering in React allows you to render different elements based on certain conditions. Which is NOT a common way to do this?",
+      "options": ["Using if/else statements", "Using the ternary operator (condition ? true : false)", "Using logical && operator", "Using CSS display: none"],
+      "correctAnswer": "Using CSS display: none"
+    }
+  ]
+}

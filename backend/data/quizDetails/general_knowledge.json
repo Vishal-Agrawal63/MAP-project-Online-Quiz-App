@@ -1,24 +1,66 @@
 {
-    "id": "general_knowledge",
-    "title": "General Knowledge Challenge",
-    "questions": [
-      {
-        "id": "gk_q1",
-        "text": "What is the capital of Australia?",
-        "options": ["Sydney", "Melbourne", "Canberra", "Brisbane"],
-        "correctAnswer": "Canberra"
-      },
-      {
-        "id": "gk_q2",
-        "text": "Which planet is known as the Red Planet?",
-        "options": ["Earth", "Mars", "Jupiter", "Venus"],
-        "correctAnswer": "Mars"
-      },
-      {
-        "id": "gk_q3",
-        "text": "Who painted the Mona Lisa?",
-        "options": ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
-        "correctAnswer": "Leonardo da Vinci"
-      }
-    ]
-  }
+  "id": "general_knowledge",
+  "title": "General Knowledge Challenge",
+  "questions": [
+    {
+      "id": "gk_q1",
+      "text": "What is the capital of Australia?",
+      "options": ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+      "correctAnswer": "Canberra"
+    },
+    {
+      "id": "gk_q2",
+      "text": "Which planet is known as the Red Planet?",
+      "options": ["Earth", "Mars", "Jupiter", "Venus"],
+      "correctAnswer": "Mars"
+    },
+    {
+      "id": "gk_q3",
+      "text": "Who painted the Mona Lisa?",
+      "options": ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
+      "correctAnswer": "Leonardo da Vinci"
+    },
+    {
+      "id": "gk_q4",
+      "text": "What is the largest ocean on Earth?",
+      "options": ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
+      "correctAnswer": "Pacific Ocean"
+    },
+    {
+      "id": "gk_q5",
+      "text": "What gas do plants absorb from the atmosphere?",
+      "options": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"],
+      "correctAnswer": "Carbon Dioxide"
+    },
+    {
+      "id": "gk_q6",
+      "text": "In which country would you find the Eiffel Tower?",
+      "options": ["Italy", "Spain", "France", "Germany"],
+      "correctAnswer": "France"
+    },
+    {
+      "id": "gk_q7",
+      "text": "What is the chemical symbol for Gold?",
+      "options": ["Go", "Ag", "Au", "Gd"],
+      "correctAnswer": "Au"
+    },
+    {
+      "id": "gk_q8",
+      "text": "Who wrote the play 'Romeo and Juliet'?",
+      "options": ["Charles Dickens", "Jane Austen", "William Shakespeare", "Mark Twain"],
+      "correctAnswer": "William Shakespeare"
+    },
+    {
+      "id": "gk_q9",
+      "text": "What is the longest river in the world?",
+      "options": ["Amazon River", "Nile River", "Mississippi River", "Yangtze River"],
+      "correctAnswer": "Nile River"
+    },
+    {
+      "id": "gk_q10",
+      "text": "What force keeps planets in orbit around the sun?",
+      "options": ["Magnetism", "Friction", "Gravity", "Tension"],
+      "correctAnswer": "Gravity"
+    }
+  ]
+}

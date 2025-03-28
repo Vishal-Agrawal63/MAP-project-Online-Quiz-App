@@ -1,0 +1,66 @@
+{
+    "id": "aws",
+    "title": "AWS Core Services",
+    "questions": [
+      {
+        "id": "aws_q1",
+        "text": "What does EC2 stand for in AWS?",
+        "options": ["Elastic Cloud Computing", "Elastic Compute Cloud", "Enhanced Compute Cluster", "External Cloud Computing"],
+        "correctAnswer": "Elastic Compute Cloud"
+      },
+      {
+        "id": "aws_q2",
+        "text": "Which AWS service provides scalable object storage?",
+        "options": ["Amazon RDS", "Amazon EC2", "Amazon S3", "Amazon Lambda"],
+        "correctAnswer": "Amazon S3"
+      },
+      {
+        "id": "aws_q3",
+        "text": "What is AWS Lambda primarily used for?",
+        "options": ["Running virtual servers", "Storing large files", "Running code without provisioning servers (Serverless)", "Managing relational databases"],
+        "correctAnswer": "Running code without provisioning servers (Serverless)"
+      },
+      {
+        "id": "aws_q4",
+        "text": "Which AWS service is used for managing relational databases?",
+        "options": ["Amazon DynamoDB", "Amazon S3", "Amazon EC2", "Amazon RDS"],
+        "correctAnswer": "Amazon RDS"
+      },
+      {
+        "id": "aws_q5",
+        "text": "What is an AWS Region?",
+        "options": ["A single data center", "A collection of data centers within a geographic area", "A specific availability zone", "A content delivery network endpoint"],
+        "correctAnswer": "A collection of data centers within a geographic area"
+      },
+      {
+        "id": "aws_q6",
+        "text": "What is an Availability Zone (AZ) within an AWS Region?",
+        "options": ["The entire geographic region", "One or more discrete data centers with redundant power, networking, and connectivity", "A user account setting", "A type of EC2 instance"],
+        "correctAnswer": "One or more discrete data centers with redundant power, networking, and connectivity"
+      },
+      {
+        "id": "aws_q7",
+        "text": "Which AWS service provides a virtual network in the cloud?",
+        "options": ["Amazon Route 53", "Amazon VPC", "AWS Direct Connect", "Amazon CloudFront"],
+        "correctAnswer": "Amazon VPC"
+      },
+      {
+        "id": "aws_q8",
+        "text": "What is the primary function of AWS IAM (Identity and Access Management)?",
+        "options": ["To monitor application performance", "To manage user access and permissions securely", "To deploy applications automatically", "To store database backups"],
+        "correctAnswer": "To manage user access and permissions securely"
+      },
+      {
+        "id": "aws_q9",
+        "text": "Which AWS service acts as a Content Delivery Network (CDN)?",
+        "options": ["Amazon S3", "Amazon EC2", "Amazon CloudFront", "AWS WAF"],
+        "correctAnswer": "Amazon CloudFront"
+      },
+      {
+        "id": "aws_q10",
+        "text": "What pricing model is most characteristic of AWS services?",
+        "options": ["Fixed monthly subscription", "One-time purchase", "Pay-as-you-go", "Free for all services"],
+        "correctAnswer": "Pay-as-you-go"
+      }
+    ]
+  }
