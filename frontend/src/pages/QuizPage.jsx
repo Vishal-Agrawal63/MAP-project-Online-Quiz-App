@@ -52,12 +52,12 @@ function QuizPage() {
   }, [quizId]); // Re-run effect if quizId changes
 
   const handleAnswerSelect = (questionId, answer) => {
-      if (quizCompleted) return; // Don't allow changes after completion
+    if (quizCompleted || !questionId) return; // Add check for valid questionId
     setUserAnswers(prev => ({
       ...prev,
-      [questionId]: answer,
+      [questionId]: answer, // Use questionId as the key
     }));
-  };
+};
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < quizData.questions.length - 1) {
@@ -111,6 +111,7 @@ function QuizPage() {
 
   if (loading && !quizCompleted) return <LoadingSpinner />; // Show spinner only when initially loading or submitting
   
+  
     // Display error if one occurred (and not completed)
   if (error && !quizCompleted) {
     return <div className="container"><p className="form-error">Error: {error}</p><button onClick={() => navigate('/quizzes')}>Back to Quizzes</button></div>;
@@ -144,19 +145,28 @@ function QuizPage() {
 
   // Render current question
   const currentQuestion = quizData.questions[currentQuestionIndex];
+  
+    // Add a check for currentQuestion before rendering
+    if (!currentQuestion || !currentQuestion.questionId) {
+      console.error("Invalid currentQuestion data:", currentQuestion);
+      // Handle this state, maybe show an error or navigate away
+      return <div className="container"><p className="form-error">Error loading question data.</p></div>;
+  }
+  
   return (
     <div className="container">
       <h2>{quizData.title}</h2>
       <p>Question {currentQuestionIndex + 1} of {quizData.questions.length}</p>
       <Question
         question={currentQuestion}
-        selectedAnswer={userAnswers[currentQuestion.id]}
-        onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.id, answer)}
+        selectedAnswer={userAnswers[currentQuestion.questionId]}
+        onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.questionId, answer)}
         showResult={false}
       />
       <button
         onClick={handleNextQuestion}
-        disabled={!userAnswers[currentQuestion.id] || (loading && quizCompleted) } // Disable while submitting too
+        // ----> CORRECTED LINE <----
+        disabled={!userAnswers[currentQuestion.questionId] || (loading && quizCompleted) } 
         className="primary"
       >
         {loading && quizCompleted ? 'Submitting...' : (currentQuestionIndex < quizData.questions.length - 1 ? 'Next Question' : 'Submit Quiz')}

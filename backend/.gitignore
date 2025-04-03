@@ -1,0 +1,4 @@
+# backend/.gitignore (add this line if not already present for .env)
+.env
+node_modules
+*.log
