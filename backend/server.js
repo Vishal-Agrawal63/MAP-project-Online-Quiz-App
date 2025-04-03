@@ -1,58 +1,48 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs').promises; // Use promises for async file reading
 const path = require('path');
+const mongoose = require('mongoose'); // Import mongoose
+require('dotenv').config(); // Load environment variables from .env
 
 const app = express();
-const port = 3001; // Choose a port different from your React app (Vite usually uses 5173)
+const port = process.env.PORT || 3001; // Use environment variable for port too
+
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// --- Helpers ---
-const dataPath = path.join(__dirname, 'data');
-const usersFilePath = path.join(dataPath, 'users.json');
-const leaderboardPath = path.join(dataPath, 'leaderboard.json');
+// --- MongoDB Connection ---
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Helper function to read JSON file safely
-async function readJsonFile(filePath, defaultData = []) {
-    try {
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(fileContent);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            console.warn(`File not found: ${filePath}. Returning default data.`);
-            return defaultData; // Return default if file doesn't exist
-        }
-        console.error(`Error reading or parsing JSON file: ${filePath}`, error);
-        // Decide how to handle corrupted files - maybe throw error or return default
-        return defaultData; // Return default on parse error for simplicity here
-    }
-}
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('MongoDB connected successfully.'))
+  .catch(err => {
+      console.error('MongoDB connection error:', err);
+      process.exit(1); // Exit if DB connection fails on startup
+  });
 
-// Helper function to write JSON file safely
-async function writeJsonFile(filePath, data) {
-    try {
-        const jsonData = JSON.stringify(data, null, 2); // Pretty print JSON
-        await fs.writeFile(filePath, jsonData, 'utf8');
-    } catch (error) {
-        console.error(`Error writing JSON file: ${filePath}`, error);
-        throw new Error(`Failed to write to file: ${path.basename(filePath)}`); // Propagate error
-    }
-}
-
+  
+  
+// --- Mongoose Models ---
+const User = require('./models/User');
+const Quiz = require('./models/Quiz');
+const QuizDetail = require('./models/QuizDetail');
+const LeaderboardEntry = require('./models/LeaderboardEntry');
+  
+  
 // --- API Endpoints ---
 
 // GET /api/quizzes - Get list of all quizzes
 app.get('/api/quizzes', async (req, res) => {
     try {
-        const filePath = path.join(dataPath, 'quizzes.json');
-        const data = await fs.readFile(filePath, 'utf8'); // Use fs.readFile directly here as it's simpler
-        res.json(JSON.parse(data));
+        // Find all documents, select only needed fields if desired
+        const quizzes = await Quiz.find({}, 'quizId title description questionCount');
+        // Mongoose returns documents; convert to plain objects if necessary (usually not needed)
+        res.json(quizzes);
     } catch (err) {
-        console.error("Error reading quizzes.json:", err);
+        console.error("Error fetching quizzes:", err);
         res.status(500).json({ message: 'Error fetching quiz list' });
     }
 });
@@ -60,20 +50,20 @@ app.get('/api/quizzes', async (req, res) => {
 // GET /api/quizzes/:quizId - Get details for a specific quiz
 app.get('/api/quizzes/:quizId', async (req, res) => {
     const { quizId } = req.params;
-    if (!quizId || quizId.includes('..') || quizId.includes('/')) {
-        return res.status(400).json({ message: 'Invalid quiz ID' });
+    // Basic validation (you might add more)
+    if (!quizId || /[\.\/]/.test(quizId)) { // Prevent path traversal
+         return res.status(400).json({ message: 'Invalid quiz ID format' });
     }
-    const filePath = path.join(dataPath, 'quizDetails', `${quizId}.json`);
+
     try {
-        const data = await fs.readFile(filePath, 'utf8');
-        res.json(JSON.parse(data));
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            res.status(404).json({ message: `Quiz '${quizId}' not found` });
-        } else {
-            console.error(`Error reading quiz ${quizId}:`, err);
-            res.status(500).json({ message: 'Error fetching quiz data' });
+        const quizDetail = await QuizDetail.findOne({ quizId: quizId }); // Find by your custom 'quizId'
+        if (!quizDetail) {
+            return res.status(404).json({ message: `Quiz '${quizId}' not found` });
         }
+        res.json(quizDetail);
+    } catch (err) {
+        console.error(`Error fetching quiz ${quizId}:`, err);
+        res.status(500).json({ message: 'Error fetching quiz data' });
     }
 });
 
@@ -85,14 +75,32 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     try {
-        const users = await readJsonFile(usersFilePath, []);
-        const user = users.find(u => u.username === username && u.password === password); // PLAIN TEXT CHECK! INSECURE!
+        const user = await User.findOne({ username: username });
 
-        if (user) {
-            res.json({ id: user.id, username: user.username }); // Don't send password back
-        } else {
-            res.status(401).json({ message: 'Invalid username or password' });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid username or password' });
         }
+
+        // !! SECURITY WARNING: COMPARE HASHED PASSWORDS !!
+        // In a real app, you would hash the incoming password and compare it to the stored hash.
+        // Example using bcrypt (after installing bcrypt: npm install bcrypt):
+        // const bcrypt = require('bcrypt');
+        // const isMatch = await bcrypt.compare(password, user.password);
+        // if (!isMatch) {
+        //    return res.status(401).json({ message: 'Invalid username or password' });
+        // }
+
+        // Plain text comparison (INSECURE - FOR DEMO ONLY)
+        if (password !== user.password) {
+             console.warn(`Login failed for ${username} (Incorrect password - using insecure comparison)`);
+             return res.status(401).json({ message: 'Invalid username or password' });
+        }
+
+        // Login successful
+        console.log(`User logged in: ${username}`);
+        // Send back MongoDB's _id as the user ID
+        res.json({ id: user._id, username: user.username });
+
     } catch (err) {
         console.error("Error during login:", err);
         res.status(500).json({ message: 'Server error during login' });
@@ -110,50 +118,54 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     try {
-        let users = await readJsonFile(usersFilePath, []);
-
         // Check if username already exists
-        if (users.some(u => u.username === username)) {
+        const existingUser = await User.findOne({ username: username });
+        if (existingUser) {
             return res.status(409).json({ message: 'Username already exists' }); // 409 Conflict
         }
 
-        // Create new user object
-        const newUser = {
-            id: `user_${Date.now()}`, // Simple unique ID
+        // !! SECURITY WARNING: HASH PASSWORD BEFORE SAVING !!
+        // Example using bcrypt:
+        // const bcrypt = require('bcrypt');
+        // const saltRounds = 10; // Adjust cost factor as needed
+        // const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // const newUser = new User({ username: username, password: hashedPassword });
+
+        // Create new user (INSECURE - PLAIN TEXT PASSWORD)
+        const newUser = new User({
             username: username,
-            password: password // WARNING: STORING PLAIN TEXT PASSWORD - HIGHLY INSECURE
-        };
+            password: password // Store hashed password here in production!
+        });
 
-        // Add new user to the array
-        users.push(newUser);
-
-        // Write the updated users array back to the file
-        await writeJsonFile(usersFilePath, users);
+        // Save the new user to the database
+        const savedUser = await newUser.save();
 
         console.log(`User registered: ${username}`);
         // Respond with new user info (excluding password)
-        res.status(201).json({ id: newUser.id, username: newUser.username }); // 201 Created
+        // Send MongoDB's _id as the user ID
+        res.status(201).json({ id: savedUser._id, username: savedUser.username }); // 201 Created
 
     } catch (err) {
+        // Handle potential validation errors from Mongoose
+        if (err.name === 'ValidationError') {
+             return res.status(400).json({ message: err.message });
+        }
         console.error("Error during signup:", err);
-        res.status(500).json({ message: err.message || 'Server error during signup' });
+        res.status(500).json({ message: 'Server error during signup' });
     }
 });
 
 // GET /api/leaderboard - Get leaderboard data
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const leaderboard = await readJsonFile(leaderboardPath, []);
+        // Fetch entries, sort by score descending, then timestamp ascending (earlier is better for ties)
+        const leaderboard = await LeaderboardEntry.find({})
+            .sort({ score: -1, timestamp: 1 }) // Sort by score (high to low), then time (old to new for ties)
+            .limit(50); // Optional: Limit the number of results
 
-        // Sort leaderboard data
-        const sortedData = [...leaderboard].sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            return a.totalQuestions - b.totalQuestions; // Higher score first, then fewer questions
-        });
-
-        res.json(sortedData);
+        res.json(leaderboard);
     } catch (err) {
-        console.error("Error reading leaderboard:", err);
+        console.error("Error fetching leaderboard:", err);
         res.status(500).json({ message: 'Error fetching leaderboard data' });
     }
 });
@@ -161,123 +173,114 @@ app.get('/api/leaderboard', async (req, res) => {
 // POST /api/quizzes/:quizId/submit - Handle quiz submission AND UPDATE/SAVE TO LEADERBOARD
 app.post('/api/quizzes/:quizId/submit', async (req, res) => {
     const { quizId } = req.params;
-    const { userAnswers, userId } = req.body;
+    const { userAnswers, userId } = req.body; // userId is now MongoDB's _id
 
-    if (!userAnswers) {
-        return res.status(400).json({ message: 'User answers are required' });
+    // --- Basic Input Validation ---
+    if (!userAnswers || typeof userAnswers !== 'object') {
+        return res.status(400).json({ message: 'User answers object is required' });
     }
-     if (!userId) {
-        // For simplicity, we require userId now to add to leaderboard properly
+    if (!userId) {
         return res.status(400).json({ message: 'User ID is required for submission' });
     }
-    if (!quizId || quizId.includes('..') || quizId.includes('/')) {
-        return res.status(400).json({ message: 'Invalid quiz ID' });
+    if (!quizId || /[\.\/]/.test(quizId)) {
+        return res.status(400).json({ message: 'Invalid quiz ID format' });
+    }
+    // Validate if userId looks like a MongoDB ObjectId (optional but good)
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+         // return res.status(400).json({ message: 'Invalid User ID format' });
+         // Or handle cases where your old string IDs might still be sent during transition
+         console.warn(`Received potentially non-ObjectId userId: ${userId}`);
     }
 
-    const quizFilePath = path.join(dataPath, 'quizDetails', `${quizId}.json`);
-    let responseMessage = "Score calculated."; // Default response message
+
+    let responseMessage = "Score calculated.";
 
     try {
         // 1. Get correct answers for the quiz
-        const quizDataRaw = await fs.readFile(quizFilePath, 'utf8');
-        const quizData = JSON.parse(quizDataRaw);
-        const questions = quizData.questions;
+        const quizDetail = await QuizDetail.findOne({ quizId: quizId });
+        if (!quizDetail) {
+            return res.status(404).json({ message: `Quiz '${quizId}' not found for submission` });
+        }
+        const questions = quizDetail.questions;
+        const totalQuestions = questions.length;
 
         // 2. Calculate score
         let calculatedScore = 0;
         questions.forEach(q => {
-            if (userAnswers[q.id] === q.correctAnswer) {
+            // Use questionId (renamed from id in schema)
+            if (userAnswers[q.questionId] === q.correctAnswer) {
                 calculatedScore++;
             }
         });
-        const totalQuestions = questions.length;
 
         // 3. Get username from userId
         let username = "Unknown User";
         try {
-             const users = await readJsonFile(usersFilePath, []);
-             const user = users.find(u => u.id === userId);
+             const user = await User.findById(userId).select('username'); // Fetch only username
              if (user) {
                  username = user.username;
              } else {
-                 console.warn(`User ID ${userId} not found in users.json for leaderboard entry.`);
+                 console.warn(`User ID ${userId} not found in users collection.`);
              }
         } catch (userErr) {
-             console.error("Could not read users.json to get username for leaderboard", userErr);
+             console.error(`Could not fetch user ${userId} for leaderboard`, userErr);
         }
 
+        // 4. Update or Insert Leaderboard Entry using findOneAndUpdate with upsert
+        const updateData = {
+            userId: userId,
+            username: username, // Update username in case it changed
+            quizId: quizId,
+            totalQuestions: totalQuestions,
+            timestamp: new Date() // Update timestamp on every attempt
+            // We only update score if it's higher
+        };
 
-        // --- 4. Read, Check for Existing Entry, Update/Add, and Write Leaderboard ---
-        try {
-            let leaderboardData = await readJsonFile(leaderboardPath, []);
-            let updatedExisting = false;
-            let scoreWasHigher = false;
-        
-            // Find the index of an existing entry for this user and quiz
-            const existingEntryIndex = leaderboardData.findIndex(entry =>
-                entry.userId === userId && entry.quizId === quizId
-            );
-        
-            if (existingEntryIndex !== -1) {
-                // Entry found - Check if the new score is higher
-                if (calculatedScore > leaderboardData[existingEntryIndex].score) {
-                    // Update existing entry
-                    leaderboardData[existingEntryIndex].score = calculatedScore;
-                    leaderboardData[existingEntryIndex].totalQuestions = totalQuestions; // Update just in case quiz changed
-                    leaderboardData[existingEntryIndex].timestamp = new Date().toISOString();
-                    leaderboardData[existingEntryIndex].username = username; // Update username in case it changed
-                    updatedExisting = true;
-                    scoreWasHigher = true;
-                    responseMessage = "Score calculated. Leaderboard updated with higher score.";
-                    console.log(`Leaderboard updated for ${username} on quiz ${quizId}. New Score: ${calculatedScore}/${totalQuestions}`);
-                } else {
-                    // Score is not higher, do not update
-                    updatedExisting = true; // We found an entry, but didn't update score
-                    responseMessage = "Score calculated. Previous score on leaderboard was higher or equal.";
-                    console.log(`Leaderboard not updated for ${username} on quiz ${quizId}. Score ${calculatedScore}/${totalQuestions} is not higher than existing ${leaderboardData[existingEntryIndex].score}/${leaderboardData[existingEntryIndex].totalQuestions}.`);
-                }
+        const existingEntry = await LeaderboardEntry.findOne({ userId: userId, quizId: quizId });
+
+        let savedEntry;
+        if (existingEntry) {
+            // Entry exists, update only if new score is higher
+            if (calculatedScore > existingEntry.score) {
+                updateData.score = calculatedScore; // Set the new higher score
+                savedEntry = await LeaderboardEntry.findOneAndUpdate(
+                    { _id: existingEntry._id }, // Find by existing entry's ID
+                    { $set: updateData }, // Use $set to update specific fields
+                    { new: true } // Return the updated document
+                );
+                responseMessage = "Score calculated. Leaderboard updated with higher score.";
+                console.log(`Leaderboard updated for ${username} (${userId}) on quiz ${quizId}. New Score: ${calculatedScore}/${totalQuestions}`);
             } else {
-                // No existing entry found - Add a new one
-                const newEntry = {
-                    userId: userId,
-                    username: username,
-                    quizId: quizId,
-                    score: calculatedScore,
-                    totalQuestions: totalQuestions,
-                    timestamp: new Date().toISOString()
-                };
-                leaderboardData.push(newEntry);
-                responseMessage = "Score calculated. New entry added to leaderboard.";
-                console.log(`New leaderboard entry added for ${username} on quiz ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
+                // Score not higher, do nothing to the score field
+                savedEntry = existingEntry; // Keep the old entry data
+                responseMessage = "Score calculated. Previous score on leaderboard was higher or equal.";
+                console.log(`Leaderboard not updated for ${username} (${userId}) on quiz ${quizId}. Score ${calculatedScore}/${totalQuestions} is not higher than existing ${existingEntry.score}/${existingEntry.totalQuestions}.`);
             }
-        
-            // Write the potentially modified leaderboard back to the file only if something changed or was added
-            if (scoreWasHigher || !updatedExisting) { // Write if score was updated OR if it's a completely new entry
-                await writeJsonFile(leaderboardPath, leaderboardData);
-            }
-        
-        } catch (leaderboardErr) {
-            console.error(`!!! Failed to read or write leaderboard file: ${leaderboardPath}`, leaderboardErr);
-            // Include error in response message if write failed
-            responseMessage = "Score calculated, but failed to update leaderboard file.";
+        } else {
+            // No existing entry, create a new one
+            updateData.score = calculatedScore; // Set score for the new entry
+            savedEntry = await LeaderboardEntry.create(updateData);
+            responseMessage = "Score calculated. New entry added to leaderboard.";
+            console.log(`New leaderboard entry added for ${username} (${userId}) on quiz ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
         }
 
-        // --- 5. Respond with the calculated score and status message ---
+
+        // 5. Respond with the calculated score and status message
         res.json({
             quizId: quizId,
             score: calculatedScore,
             totalQuestions: totalQuestions,
-            message: responseMessage
+            message: responseMessage,
+            leaderboardEntry: savedEntry // Optional: send back the entry details
         });
 
     } catch (err) {
-        // Handle errors fetching quiz details or other unexpected errors
-        if (err.code === 'ENOENT' && err.path && err.path.includes(quizId)) { // Check path includes quizId loosely
-            res.status(404).json({ message: `Quiz '${quizId}' not found for submission` });
-        } else {
-            console.error(`Error processing submission for quiz ${quizId}:`, err);
-            res.status(500).json({ message: err.message || 'Error processing quiz submission' });
+        console.error(`Error processing submission for quiz ${quizId}:`, err);
+        // Check for specific Mongoose errors if needed
+        if (err.name === 'CastError' && err.path === '_id') {
+            return res.status(400).json({ message: 'Invalid User ID format provided.' });
         }
+        res.status(500).json({ message: err.message || 'Error processing quiz submission' });
     }
 });
 
