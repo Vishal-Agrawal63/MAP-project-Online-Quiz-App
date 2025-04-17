@@ -4,6 +4,13 @@ const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose'); // Import mongoose
 require('dotenv').config(); // Load environment variables from .env
+const explanationRoute = require('./explanation');
+// const { OpenAI } = require("openai");
+// --- Mongoose Models ---
+const User = require('./models/User');
+const Quiz = require('./models/Quiz');
+const QuizDetail = require('./models/QuizDetail');
+const LeaderboardEntry = require('./models/LeaderboardEntry');
 
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable for port too
@@ -15,6 +22,10 @@ app.use(express.json());
 
 // --- MongoDB Connection ---
 const MONGODB_URI = process.env.MONGODB_URI;
+// const openai = new OpenAI({ 
+//     baseURL: "https://openrouter.ai/api/v1", // <-- changed base URL
+//     apiKey: process.env.OPENROUTER_API_KEY
+// });
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected successfully.'))
@@ -23,16 +34,8 @@ mongoose.connect(MONGODB_URI)
       process.exit(1); // Exit if DB connection fails on startup
   });
 
-  
-  
-// --- Mongoose Models ---
-const User = require('./models/User');
-const Quiz = require('./models/Quiz');
-const QuizDetail = require('./models/QuizDetail');
-const LeaderboardEntry = require('./models/LeaderboardEntry');
-  
-  
 // --- API Endpoints ---
+app.use('/', explanationRoute); 
 
 // GET /api/quizzes - Get list of all quizzes
 app.get('/api/quizzes', async (req, res) => {
@@ -169,7 +172,7 @@ app.get('/api/leaderboard', async (req, res) => {
         res.status(500).json({ message: 'Error fetching leaderboard data' });
     }
 });
-
+  
 // POST /api/quizzes/:quizId/submit - Handle quiz submission AND UPDATE/SAVE TO LEADERBOARD
 app.post('/api/quizzes/:quizId/submit', async (req, res) => {
     const { quizId } = req.params;

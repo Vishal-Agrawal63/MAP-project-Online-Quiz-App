@@ -15,7 +15,7 @@ services:
       # Pass the MongoDB URI for the containerized mongo service
       # 'mongo' is the service name below. 'quizAppDb' is the database name.
       - MONGODB_URI=mongodb://mongo:27017/quizAppDb
-      - PORT=3001 # Define port if needed
+      - OPENROUTER_API_KEY=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
       # Add other env vars like NODE_ENV=production
     expose:
       - '3001'

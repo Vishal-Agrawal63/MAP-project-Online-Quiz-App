@@ -2,177 +2,212 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Question from '../components/Question';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ResultsPage from './ResultsPage'; // We'll render results directly for simplicity here
-import { useAuth } from '../context/AuthContext'; // Import useAuth to get userId
+import ResultsPage from './ResultsPage';
+import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = '/api'; // Use a relative path
+const API_BASE_URL = '/api'; // Adjust if needed
 
 function QuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth(); // Get current user for submission
+  const { currentUser } = useAuth();
+
   const [quizData, setQuizData] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); // { questionId: answer }
+  const [userAnswers, setUserAnswers] = useState({});
+  const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [score, setScore] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0); // Store total questions
+  const [explanation, setExplanation] = useState('');
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   useEffect(() => {
     const fetchQuiz = async () => {
-        setLoading(true);
-        setError(null);
-        setQuizData(null); // Clear previous data
-        // Reset states for new quiz attempt
-        setCurrentQuestionIndex(0);
-        setUserAnswers({});
-        setQuizCompleted(false);
-        setScore(0);
-        setTotalQuestions(0);
+      setLoading(true);
+      setError(null);
+      setQuizData(null);
+      setCurrentQuestionIndex(0);
+      setUserAnswers({});
+      setQuizCompleted(false);
+      setScore(0);
+      setTotalQuestions(0);
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}`);
-             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            setQuizData(data);
-            setTotalQuestions(data.questions.length); // Store total questions from fetched data
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
+      try {
+        const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
+        const data = await response.json();
+        setQuizData(data);
+        setTotalQuestions(data.questions.length);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchQuiz();
-  }, [quizId]); // Re-run effect if quizId changes
+  }, [quizId]);
 
   const handleAnswerSelect = (questionId, answer) => {
-    if (quizCompleted || !questionId) return; // Add check for valid questionId
+    if (quizCompleted || confirmed) return;
     setUserAnswers(prev => ({
       ...prev,
-      [questionId]: answer, // Use questionId as the key
+      [questionId]: answer,
     }));
-};
+  };
+
+  const handleConfirmAnswer = async () => {
+    setConfirmed(true);
+
+    const currentQuestion = quizData.questions[currentQuestionIndex];
+    const selectedAnswer = userAnswers[currentQuestion.questionId];
+    const correctAnswer = currentQuestion.correctAnswer; // Get the correct answer
+    console.log('Sending to /api/explanation:', {
+        question: currentQuestion.text,
+        answer: correctAnswer // Use 'answer' as the key
+    }); // Add logging
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/explanation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // --- MODIFIED LINE ---
+        body: JSON.stringify({
+          question: currentQuestion.text,
+          answer: correctAnswer, // Send the correct answer under the key 'answer'
+          // You can remove selectedAnswer unless your backend needs it for something else
+        }),
+        // --- END MODIFIED LINE ---
+      });
+
+      if (!response.ok) {
+        const errorResponse = await response.text(); // Read response text for detailed errors
+        console.error('Explanation fetch failed response:', errorResponse); // Log the actual error body
+        throw new Error(`Failed to fetch explanation: ${response.status} - ${errorResponse}`);
+      }
+
+      const data = await response.json();
+
+      // --- Adjusted Explanation Message Logic (Optional but Recommended) ---
+      // The explanation from the AI focuses on why the CORRECT answer is right.
+      // Adapt the display logic accordingly.
+
+      setExplanation(data.explanation); // Store just the AI's explanation
+
+    } catch (err) {
+      console.error('Error fetching explanation:', err);
+      // Provide a clearer user message if explanation fails
+      setExplanation('Sorry, could not retrieve an explanation at this time.');
+    }
+  };
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < quizData.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
+      setConfirmed(false);
+      setExplanation('');
     } else {
-      // If it's the last question, submit automatically or show submit button
       handleSubmitQuiz();
     }
   };
 
-  // Updated handleSubmitQuiz to call backend
   const handleSubmitQuiz = async () => {
-    setLoading(true); // Show loading indicator during submission
+    setLoading(true);
     setError(null);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userAnswers: userAnswers,
-                userId: currentUser?.id // Send userId if available
-            }),
-        });
+      const response = await fetch(`${API_BASE_URL}/quizzes/${quizId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userAnswers,
+          userId: currentUser?.id,
+        }),
+      });
 
-        const resultData = await response.json();
+      const resultData = await response.json();
+      if (!response.ok) {
+        throw new Error(resultData.message || `HTTP error! status: ${response.status}`);
+      }
 
-        if (!response.ok) {
-            throw new Error(resultData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        // Use score and total from backend response
-        setScore(resultData.score);
-        // Total questions could also come from resultData.totalQuestions if backend calculates it reliably
-        // setTotalQuestions(resultData.totalQuestions);
-        setQuizCompleted(true);
-
-        console.log("Quiz submission response:", resultData);
-
+      setScore(resultData.score);
+      setQuizCompleted(true);
     } catch (err) {
-         console.error("Error submitting quiz:", err);
-         // Show error to user, maybe allow retry?
-         setError(`Failed to submit quiz results: ${err.message}`);
-         // Optionally: Don't set quizCompleted=true on error, allow retry?
-         // For simplicity now, we still proceed to show results page (potentially with score 0) if submission fails hard
-         setQuizCompleted(true); // Or handle error state more gracefully
+      setError(`Failed to submit quiz results: ${err.message}`);
+      setQuizCompleted(true);
     } finally {
-        setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
 
-  if (loading && !quizCompleted) return <LoadingSpinner />; // Show spinner only when initially loading or submitting
-  
-  
-    // Display error if one occurred (and not completed)
+  if (loading && !quizCompleted) return <LoadingSpinner />;
   if (error && !quizCompleted) {
-    return <div className="container"><p className="form-error">Error: {error}</p><button onClick={() => navigate('/quizzes')}>Back to Quizzes</button></div>;
-  }
-  
-  // Display results if completed
-  if (quizCompleted) {
-    // If submission failed but we proceeded, show error within results
-    if (error) {
-         return (
-             <div className="container">
-                 <h2>Error Submitting Results</h2>
-                 <p className="form-error">{error}</p>
-                 <button onClick={() => navigate('/quizzes')} className="primary">Back to Quizzes</button>
-             </div>
-         );
-    }
-    // Otherwise, show normal results
     return (
-        <ResultsPage
-            score={score}
-            totalQuestions={totalQuestions} // Use state variable
-            quizTitle={quizData?.title || 'Quiz'} // Use optional chaining
-            onRestart={() => navigate('/quizzes')}
-        />
+      <div className="container">
+        <p className="form-error">Error: {error}</p>
+        <button onClick={() => navigate('/quizzes')}>Back to Quizzes</button>
+      </div>
     );
   }
 
-  // If still loading quiz data but haven't submitted (edge case after error?)
+  if (quizCompleted) {
+    if (error) {
+      return (
+        <div className="container">
+          <h2>Error Submitting Results</h2>
+          <p className="form-error">{error}</p>
+          <button onClick={() => navigate('/quizzes')} className="primary">Back to Quizzes</button>
+        </div>
+      );
+    }
+
+    return (
+      <ResultsPage
+        score={score}
+        totalQuestions={totalQuestions}
+        quizTitle={quizData?.title || 'Quiz'}
+        onRestart={() => navigate('/quizzes')}
+      />
+    );
+  }
+
   if (!quizData) return <div className="container"><p>Loading quiz data...</p></div>;
 
-  // Render current question
   const currentQuestion = quizData.questions[currentQuestionIndex];
-  
-    // Add a check for currentQuestion before rendering
-    if (!currentQuestion || !currentQuestion.questionId) {
-      console.error("Invalid currentQuestion data:", currentQuestion);
-      // Handle this state, maybe show an error or navigate away
-      return <div className="container"><p className="form-error">Error loading question data.</p></div>;
-  }
-  
+  const isAnswerSelected = !!userAnswers[currentQuestion.questionId];
+
   return (
     <div className="container">
       <h2>{quizData.title}</h2>
       <p>Question {currentQuestionIndex + 1} of {quizData.questions.length}</p>
+
       <Question
         question={currentQuestion}
         selectedAnswer={userAnswers[currentQuestion.questionId]}
         onAnswerSelect={(answer) => handleAnswerSelect(currentQuestion.questionId, answer)}
-        showResult={false}
+        disabled={confirmed}
+        showResult={confirmed}
+        explanation={explanation}
       />
-      <button
-        onClick={handleNextQuestion}
-        // ----> CORRECTED LINE <----
-        disabled={!userAnswers[currentQuestion.questionId] || (loading && quizCompleted) } 
-        className="primary"
-      >
-        {loading && quizCompleted ? 'Submitting...' : (currentQuestionIndex < quizData.questions.length - 1 ? 'Next Question' : 'Submit Quiz')}
-      </button>
+
+      {isAnswerSelected && !confirmed && (
+        <button onClick={handleConfirmAnswer} className="primary">
+          Confirm Answer
+        </button>
+      )}
+
+      {confirmed && (
+        <button onClick={handleNextQuestion} className="primary">
+          {currentQuestionIndex < quizData.questions.length - 1 ? 'Next Question' : 'Submit Quiz'}
+        </button>
+      )}
     </div>
   );
-  }
+}
 
 export default QuizPage;
