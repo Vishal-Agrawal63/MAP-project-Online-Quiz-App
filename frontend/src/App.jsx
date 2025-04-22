@@ -10,6 +10,7 @@ import QuizSelectionPage from './pages/QuizSelectionPage';
 import QuizPage from './pages/QuizPage';
 // ResultsPage is rendered inside QuizPage now, so no separate route needed unless you want direct access
 import LeaderboardPage from './pages/LeaderboardPage';
+import AiAccuracyPage from './pages/AiAccuracyPage'; // Import the new page
 
 // Component to protect routes that require login
 function ProtectedRoute({ children }) {
@@ -52,6 +53,12 @@ function App() {
              <Route
               path="/leaderboard"
               element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>}
+            />
+                        {/* Add the new route - maybe protect it */}
+            <Route
+              path="/ai-accuracy" // Choose your desired path
+              element={<ProtectedRoute><AiAccuracyPage /></ProtectedRoute>}
+              // Or just element={<AiAccuracyPage />} if public
             />
 
             {/* Fallback for unknown routes */}
