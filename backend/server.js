@@ -2,18 +2,20 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const axios = require('axios'); // <-- Make sure axios is imported
+const axios = require('axios'); // Essential for API calls
 require('dotenv').config(); // Load environment variables from .env
 
 // --- Route Imports ---
-const explanationRoute = require('./explanation'); // Assuming this file exists and exports a router
+// Assuming explanation.js exports an Express Router correctly
+const explanationRoute = require('./explanation');
 
 // --- Mongoose Models ---
 const User = require('./models/User');
 const Quiz = require('./models/Quiz');
 const QuizDetail = require('./models/QuizDetail');
 const LeaderboardEntry = require('./models/LeaderboardEntry');
-const AiAccuracyLog = require('./models/AiAccuracyLog'); // <-- Import the new model
+const AiAccuracyLog = require('./models/AiAccuracyLog');
+const AiGeneratedQuestionLog = require('./models/AiGeneratedQuestionLog'); // Import for generator
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -36,10 +38,10 @@ mongoose.connect(MONGODB_URI)
       process.exit(1); // Exit if DB connection fails on startup
   });
 
-// --- Helper Function for AI Prediction ---
+// --- Helper Function for AI Prediction (Accuracy Check) ---
 async function getAiPrediction(questionText, options, correctAnswer) {
     console.log(`Asking AI for prediction on: "${questionText}"`);
-    const model = 'openai/gpt-4o-mini'; // Or make dynamic based on env var
+    const model = 'openai/gpt-4o-mini';
 
     const prompt = `Analyze the following multiple-choice question and determine the single best answer.
 Question: "${questionText}"
@@ -51,90 +53,141 @@ Respond ONLY with the letter of the correct option (e.g., A, B, C, D). Do not in
     try {
         const response = await axios.post(
             'https://openrouter.ai/api/v1/chat/completions',
-            {
-                model: model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 5,
-                temperature: 0.2
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                    // Optional but recommended headers:
-                    'HTTP-Referer': process.env.YOUR_SITE_URL || 'http://localhost:8080', // Adjust port if needed
-                    'X-Title': process.env.YOUR_APP_NAME || 'QuizApp'
-                },
-                timeout: 15000 // 15 second timeout
-            }
+             { model: model, messages: [{ role: 'user', content: prompt }], max_tokens: 5, temperature: 0.2 },
+             {
+                 headers: {
+                     'Content-Type': 'application/json',
+                     Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                     'HTTP-Referer': process.env.YOUR_SITE_URL || 'http://localhost:8080',
+                     'X-Title': process.env.YOUR_APP_NAME || 'QuizApp'
+                 },
+                 timeout: 15000
+             }
         );
 
+        // --- PARSING LOGIC (Condensed from previous example) ---
         const rawResponse = response.data.choices[0]?.message?.content?.trim() || '';
-        console.log(`AI Raw Response for Prediction: "${rawResponse}"`);
-
         let predictedAnswerText = null;
         let isCorrect = false;
-
-        // Attempt 1: Exact letter match (A, B, C...) based on our prompt
         const letterMatch = rawResponse.match(/^[A-Z]$/i);
         if (letterMatch) {
-             const predictedLetterIndex = letterMatch[0].toUpperCase().charCodeAt(0) - 65; // A=0, B=1,...
-             if (predictedLetterIndex >= 0 && predictedLetterIndex < options.length) {
-                 predictedAnswerText = options[predictedLetterIndex];
-                 console.log(`AI Predicted via Letter (${letterMatch[0]}): ${predictedAnswerText}`);
-             }
-        }
-
-        // Fallback: Check if the raw response contains the exact text of one of the options
-        if (!predictedAnswerText) {
-            for (const option of options) {
-                 const regex = new RegExp(`\\b${option.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i'); // Whole word, case-insensitive
-                 if (regex.test(rawResponse)) {
-                     predictedAnswerText = option;
-                     console.log(`AI Predicted via Text Match: ${predictedAnswerText}`);
-                     break; // Take the first match
-                 }
+            const predictedLetterIndex = letterMatch[0].toUpperCase().charCodeAt(0) - 65;
+            if (predictedLetterIndex >= 0 && predictedLetterIndex < options.length) {
+                predictedAnswerText = options[predictedLetterIndex];
             }
         }
-
+        if (!predictedAnswerText) { // Fallback Check
+             for (const option of options) {
+                 const regex = new RegExp(`\\b${option.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
+                 if (regex.test(rawResponse)) {
+                      predictedAnswerText = option;
+                      break;
+                 }
+             }
+        }
         if (predictedAnswerText) {
             isCorrect = predictedAnswerText.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
         } else {
              console.warn(`Could not reliably parse AI prediction from: "${rawResponse}"`);
-             predictedAnswerText = "Parsing Failed"; // Indicate failure
+             predictedAnswerText = "Parsing Failed";
              isCorrect = false;
         }
-
-        return {
-            aiPredictedAnswer: predictedAnswerText,
-            isAiCorrect: isCorrect,
-            aiResponseRaw: rawResponse,
-            aiModelUsed: model
-        };
+         return { aiPredictedAnswer: predictedAnswerText, isAiCorrect: isCorrect, aiResponseRaw: rawResponse, aiModelUsed: model };
+         // --- End Condensed Parsing ---
 
     } catch (error) {
         console.error('Error getting AI prediction:', error.response?.data || error.message);
-        // Log specific axios error details if available
-        if (error.response) {
-            console.error("Axios Error Details:", { status: error.response.status, data: error.response.data });
-        } else if (error.request) {
-            console.error("Axios Error: No response received", error.request);
+        if (error.response) { console.error("Axios Error Details:", { status: error.response.status, data: error.response.data }); }
+        return { aiPredictedAnswer: "Error Fetching", isAiCorrect: false, aiResponseRaw: error.message || "Unknown Axios Error", aiModelUsed: model };
+    }
+}
+
+// --- Helper Function for AI Question Generation ---
+async function generateQuestionWithAi(topic) {
+    console.log(`Asking AI to generate question for topic: "${topic}"`);
+    const model = 'openai/gpt-4o-mini'; // Or make dynamic
+
+    const prompt = `Generate a single, high-quality multiple-choice quiz question suitable for a general knowledge quiz, based on the topic "${topic}".
+Provide the output strictly in the following format, with each part on a new line:
+Question: [The question text]
+A: [Option A text]
+B: [Option B text]
+C: [Option C text]
+D: [Option D text]
+Correct Answer: [The letter of the correct option, e.g., B]
+
+Ensure the question is clear, the options are distinct, and only one option is definitively correct. Do not include any other text, introductions, or explanations.`;
+
+    try {
+        const response = await axios.post(
+            'https://openrouter.ai/api/v1/chat/completions',
+            { model: model, messages: [{ role: 'user', content: prompt }], temperature: 0.7 },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': process.env.YOUR_SITE_URL || 'http://localhost:8080',
+                    'X-Title': process.env.YOUR_APP_NAME || 'QuizApp'
+                },
+                timeout: 25000
+            }
+        );
+
+        const rawResponse = response.data.choices[0]?.message?.content?.trim() || '';
+        console.log(`AI Raw Response for Generation: \n"${rawResponse}"`);
+
+        // --- PARSING LOGIC ---
+        let questionText = null;
+        const options = {};
+        let correctLetter = null;
+        let parsingSuccessful = false;
+        const lines = rawResponse.split('\n');
+        const prefixes = { "Question:": "questionText", "A:": "A", "B:": "B", "C:": "C", "D:": "D", "Correct Answer:": "correctLetter" };
+        const extracted = {};
+
+        lines.forEach(line => {
+            const trimmedLine = line.trim();
+            for (const prefix in prefixes) {
+                if (trimmedLine.startsWith(prefix)) {
+                    const value = trimmedLine.substring(prefix.length).trim();
+                    const key = prefixes[prefix];
+                    if (key === "questionText" || key === "correctLetter") { extracted[key] = value; }
+                    else { options[key] = value; }
+                    break;
+                }
+            }
+        });
+        questionText = extracted.questionText;
+        correctLetter = extracted.correctLetter?.toUpperCase().charAt(0);
+        if (questionText && options.A && options.B && options.C && options.D && correctLetter && options[correctLetter]) {
+            parsingSuccessful = true;
+            console.log("AI Question Response Parsed Successfully.");
         } else {
-             console.error("Axios Error Setup:", error.message);
+            console.error("Failed to parse AI question response structure.");
+            console.log("Extracted for Debug:", { questionText, options, correctLetter });
         }
+
         return {
-            aiPredictedAnswer: "Error Fetching",
-            isAiCorrect: false,
-            aiResponseRaw: error.message || "Unknown Axios Error",
-            aiModelUsed: model
+            success: parsingSuccessful,
+            questionText: questionText,
+            optionsArray: parsingSuccessful ? [options.A, options.B, options.C, options.D] : [],
+            correctAnswerText: parsingSuccessful ? options[correctLetter] : null,
+            rawResponse: rawResponse,
+            modelUsed: model,
+            error: parsingSuccessful ? null : "Failed to parse response structure."
         };
+
+    } catch (error) {
+        console.error('Error generating question with AI:', error.response?.data || error.message);
+        if (error.response) { console.error("Axios Error Details:", { status: error.response.status, data: error.response.data }); }
+        return { success: false, questionText: null, optionsArray: [], correctAnswerText: null, rawResponse: error.message || "Unknown Axios Error", modelUsed: model, error: error.message || "API call failed." };
     }
 }
 
 
 // --- API Endpoints ---
 
-// Mount the explanation route (ensure explanation.js exports a router)
+// Mount the explanation route
 app.use('/', explanationRoute);
 
 // GET /api/quizzes - Get list of all quizzes
@@ -154,7 +207,6 @@ app.get('/api/quizzes/:quizId', async (req, res) => {
     if (!quizId || /[\.\/]/.test(quizId)) {
          return res.status(400).json({ message: 'Invalid quiz ID format' });
     }
-
     try {
         const quizDetail = await QuizDetail.findOne({ quizId: quizId });
         if (!quizDetail) {
@@ -173,25 +225,21 @@ app.post('/api/auth/login', async (req, res) => {
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
     }
-
     try {
         const user = await User.findOne({ username: username });
         if (!user) {
+            console.warn(`Login attempt failed for non-existent user: ${username}`);
             return res.status(401).json({ message: 'Invalid username or password' });
         }
-
         // !! SECURITY WARNING: COMPARE HASHED PASSWORDS IN PRODUCTION !!
-        // Replace this with bcrypt.compare()
         if (password !== user.password) {
              console.warn(`Login failed for ${username} (Incorrect password - using insecure comparison)`);
              return res.status(401).json({ message: 'Invalid username or password' });
         }
-
         console.log(`User logged in: ${username}`);
-        res.json({ id: user._id, username: user.username }); // Use MongoDB _id
-
+        res.json({ id: user._id, username: user.username });
     } catch (err) {
-        console.error("Error during login:", err);
+        console.error("Error during login for user:", username, err);
         res.status(500).json({ message: 'Server error during login' });
     }
 });
@@ -199,35 +247,18 @@ app.post('/api/auth/login', async (req, res) => {
 // POST /api/auth/signup - Handle user signup
 app.post('/api/auth/signup', async (req, res) => {
     const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-    }
-    if (password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
-    }
-
+    if (!username || !password) { return res.status(400).json({ message: 'Username and password are required' }); }
+    if (password.length < 6) { return res.status(400).json({ message: 'Password must be at least 6 characters long' }); }
     try {
         const existingUser = await User.findOne({ username: username });
-        if (existingUser) {
-            return res.status(409).json({ message: 'Username already exists' }); // 409 Conflict
-        }
-
+        if (existingUser) { return res.status(409).json({ message: 'Username already exists' }); }
         // !! SECURITY WARNING: HASH PASSWORD BEFORE SAVING IN PRODUCTION !!
-        // Use bcrypt.hash() here
-        const newUser = new User({
-            username: username,
-            password: password // Store HASHED password
-        });
-
+        const newUser = new User({ username: username, password: password /* HASHED password */ });
         const savedUser = await newUser.save();
-
         console.log(`User registered: ${username}`);
-        res.status(201).json({ id: savedUser._id, username: savedUser.username }); // 201 Created
-
+        res.status(201).json({ id: savedUser._id, username: savedUser.username });
     } catch (err) {
-        if (err.name === 'ValidationError') {
-             return res.status(400).json({ message: err.message });
-        }
+        if (err.name === 'ValidationError') { return res.status(400).json({ message: err.message }); }
         console.error("Error during signup:", err);
         res.status(500).json({ message: 'Server error during signup' });
     }
@@ -237,9 +268,7 @@ app.post('/api/auth/signup', async (req, res) => {
 app.get('/api/leaderboard', async (req, res) => {
     try {
         const leaderboard = await LeaderboardEntry.find({})
-            .sort({ score: -1, timestamp: 1 }) // Score high to low, then oldest first for ties
-            .limit(50); // Limit results
-
+            .sort({ score: -1, timestamp: 1 }).limit(50);
         res.json(leaderboard);
     } catch (err) {
         console.error("Error fetching leaderboard:", err);
@@ -247,195 +276,182 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
-// --- NEW: Endpoint for AI Accuracy Statistics ---
+// GET /api/ai-accuracy-stats - Get aggregated AI accuracy data
 app.get('/api/ai-accuracy-stats', async (req, res) => {
     try {
-        // Overall Accuracy
-        const overallStats = await AiAccuracyLog.aggregate([
-            { $match: { aiPredictedAnswer: { $nin: ["Error Fetching", "Parsing Failed"] } } }, // Exclude errors/failures from stats
-            { $group: { _id: null, totalChecks: { $sum: 1 }, totalCorrect: { $sum: { $cond: ["$isAiCorrect", 1, 0] } } } },
-            { $project: { _id: 0, totalChecks: 1, totalCorrect: 1, overallAccuracy: { $cond: [{ $eq: ["$totalChecks", 0] }, 0, { $divide: ["$totalCorrect", "$totalChecks"] }] } } }
-        ]);
-
-        // Accuracy per Quiz
-        const perQuizStats = await AiAccuracyLog.aggregate([
-             { $match: { aiPredictedAnswer: { $nin: ["Error Fetching", "Parsing Failed"] } } }, // Exclude errors/failures
-             { $group: { _id: "$quizId", totalChecks: { $sum: 1 }, totalCorrect: { $sum: { $cond: ["$isAiCorrect", 1, 0] } } } },
-             { $project: { quizId: "$_id", totalChecks: 1, totalCorrect: 1, accuracy: { $cond: [{ $eq: ["$totalChecks", 0] }, 0, { $divide: ["$totalCorrect", "$totalChecks"] }] }, _id: 0 } },
-             { $sort: { quizId: 1 } }
-        ]);
-
+        // Define aggregation pipelines (make sure they are correct)
+         const overallPipeline = [
+             { $match: { aiPredictedAnswer: { $nin: ["Error Fetching", "Parsing Failed"] } } },
+             { $group: { _id: null, totalChecks: { $sum: 1 }, totalCorrect: { $sum: { $cond: ["$isAiCorrect", 1, 0] } } } },
+             { $project: { _id: 0, totalChecks: 1, totalCorrect: 1, overallAccuracy: { $cond: [{ $eq: ["$totalChecks", 0] }, 0, { $divide: ["$totalCorrect", "$totalChecks"] }] } } }
+         ];
+         const perQuizPipeline = [
+              { $match: { aiPredictedAnswer: { $nin: ["Error Fetching", "Parsing Failed"] } } },
+              { $group: { _id: "$quizId", totalChecks: { $sum: 1 }, totalCorrect: { $sum: { $cond: ["$isAiCorrect", 1, 0] } } } },
+              { $project: { quizId: "$_id", totalChecks: 1, totalCorrect: 1, accuracy: { $cond: [{ $eq: ["$totalChecks", 0] }, 0, { $divide: ["$totalCorrect", "$totalChecks"] }] }, _id: 0 } },
+              { $sort: { quizId: 1 } }
+         ];
+        const overallStats = await AiAccuracyLog.aggregate(overallPipeline);
+        const perQuizStats = await AiAccuracyLog.aggregate(perQuizPipeline);
         res.json({
             overall: overallStats.length > 0 ? overallStats[0] : { totalChecks: 0, totalCorrect: 0, overallAccuracy: 0 },
             byQuiz: perQuizStats
         });
-
     } catch (err) {
         console.error("Error fetching AI accuracy stats:", err);
         res.status(500).json({ message: 'Error fetching AI accuracy statistics' });
     }
 });
 
+// POST /api/generate-question - Trigger AI question generation
+app.post('/api/generate-question', async (req, res) => {
+    const { topic } = req.body;
+    if (!topic || typeof topic !== 'string' || topic.trim() === '') {
+        return res.status(400).json({ success: false, message: 'A valid topic is required.' });
+    }
+    const trimmedTopic = topic.trim();
+    console.log(`Received request to generate question for topic: "${trimmedTopic}"`);
+
+    const generationResult = await generateQuestionWithAi(trimmedTopic);
+
+    let logStatus = 'pending_review';
+    if (!generationResult.success) {
+        logStatus = generationResult.error === "Failed to parse response structure." ? 'parsing_failed' : 'generation_failed';
+    }
+
+    const logEntry = new AiGeneratedQuestionLog({
+        topic: trimmedTopic,
+        generatedQuestionText: generationResult.questionText,
+        generatedOptions: generationResult.optionsArray,
+        generatedCorrectAnswer: generationResult.correctAnswerText,
+        aiModelUsed: generationResult.modelUsed,
+        rawAiResponse: generationResult.rawResponse,
+        status: logStatus,
+    });
+
+    try {
+        const savedLog = await logEntry.save();
+        console.log(`Saved generated question log ID: ${savedLog._id}, Status: ${logStatus}`);
+        if (generationResult.success) {
+            // --- MODIFIED RESPONSE TO INCLUDE generatedQuestion ---
+            res.status(201).json({
+                success: true,
+                message: 'Question generated successfully and saved for review.',
+                generatedQuestionId: savedLog._id,
+                generatedQuestion: { // Include details for frontend preview
+                    text: savedLog.generatedQuestionText,
+                    options: savedLog.generatedOptions,
+                    correctAnswer: savedLog.generatedCorrectAnswer
+                }
+            });
+            // --- END MODIFICATION ---
+        } else {
+            // Still send 500 on generation/parsing failure, but include logId
+            res.status(500).json({
+                success: false,
+                message: `Failed to generate or parse question. ${generationResult.error || ''}`.trim(),
+                logId: savedLog._id
+            });
+        }
+    } catch (dbError) {
+        console.error("Failed to save question generation log to DB:", dbError);
+        // This error means the AI call might have happened but DB save failed
+        res.status(500).json({
+            success: false,
+            message: 'AI interaction may have occurred, but failed to save the log to the database.',
+            error: dbError.message
+        });
+    }
+});
+
 // POST /api/quizzes/:quizId/submit - Handle submission, update leaderboard, log AI accuracy
 app.post('/api/quizzes/:quizId/submit', async (req, res) => {
     const { quizId } = req.params;
-    const { userAnswers, userId } = req.body; // userId should be MongoDB _id
+    const { userAnswers, userId } = req.body;
 
-    // --- Basic Input Validation ---
-    if (!userAnswers || typeof userAnswers !== 'object' || Object.keys(userAnswers).length === 0) {
-        return res.status(400).json({ message: 'Valid user answers object is required' });
-    }
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-         // Allow flexibility during transition? Or enforce strictly:
-         return res.status(400).json({ message: 'Valid User ID (MongoDB ObjectId) is required' });
-    }
-    if (!quizId || /[\.\/]/.test(quizId)) {
-        return res.status(400).json({ message: 'Invalid quiz ID format' });
-    }
+    // --- Input Validation ---
+    if (!userAnswers || typeof userAnswers !== 'object' || Object.keys(userAnswers).length === 0) { return res.status(400).json({ message: 'Valid user answers object is required' }); }
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) { return res.status(400).json({ message: 'Valid User ID (MongoDB ObjectId) is required' }); }
+    if (!quizId || /[\.\/]/.test(quizId)) { return res.status(400).json({ message: 'Invalid quiz ID format' }); }
 
-    let responseMessage = "Score calculated."; // Default status message
+    let responseMessage = "Score calculated.";
 
     try {
-        // 1. Get correct answers for the quiz
+        // 1. Get Quiz Details
         const quizDetail = await QuizDetail.findOne({ quizId: quizId });
-        if (!quizDetail) {
-            return res.status(404).json({ message: `Quiz '${quizId}' not found for submission` });
-        }
+        if (!quizDetail) { return res.status(404).json({ message: `Quiz '${quizId}' not found for submission` }); }
         const questions = quizDetail.questions;
         const totalQuestions = questions.length;
 
-        // 2. Calculate user score
+        // 2. Calculate User Score
         let calculatedScore = 0;
         questions.forEach(q => {
-            // Ensure the user actually answered this question before checking
             if (userAnswers.hasOwnProperty(q.questionId) && userAnswers[q.questionId] === q.correctAnswer) {
                 calculatedScore++;
             }
         });
 
-        // --- 3. AI Accuracy Check (Run concurrently for performance) ---
+        // 3. AI Accuracy Check (Run concurrently)
         const accuracyPromises = questions
-            .filter(q => userAnswers.hasOwnProperty(q.questionId)) // Only check questions the user answered
+            .filter(q => userAnswers.hasOwnProperty(q.questionId))
             .map(async (q) => {
                 const predictionResult = await getAiPrediction(q.text, q.options, q.correctAnswer);
                 const logEntry = new AiAccuracyLog({
-                    quizId: quizId,
-                    questionId: q.questionId,
-                    questionText: q.text,
-                    correctAnswer: q.correctAnswer,
-                    aiPredictedAnswer: predictionResult.aiPredictedAnswer,
-                    isAiCorrect: predictionResult.isAiCorrect,
-                    aiResponseRaw: predictionResult.aiResponseRaw, // Store raw response for debugging
-                    aiModelUsed: predictionResult.aiModelUsed,
-                    // userId: userId, // Optionally store who triggered the check
+                     quizId: quizId,
+                     questionId: q.questionId,
+                     questionText: q.text,
+                     correctAnswer: q.correctAnswer,
+                     aiPredictedAnswer: predictionResult.aiPredictedAnswer,
+                     isAiCorrect: predictionResult.isAiCorrect,
+                     aiResponseRaw: predictionResult.aiResponseRaw,
+                     aiModelUsed: predictionResult.aiModelUsed
                 });
-                try {
-                    await logEntry.save();
-                    // Optional: Log less verbosely in production
-                    // console.log(`Accuracy logged for Q:${q.questionId} - Correct: ${predictionResult.isAiCorrect}`);
-                } catch (logError) {
-                    console.error(`Failed to save accuracy log for Q:${q.questionId}:`, logError);
-                    // Decide if this error should fail the whole request or just be logged
-                }
+                try { await logEntry.save(); }
+                catch (logError) { console.error(`Failed to save accuracy log for Q:${q.questionId}:`, logError); }
             });
+        // Wait for checks only if essential before responding, otherwise let them run
+        try { await Promise.all(accuracyPromises); console.log(`AI Accuracy checks completed for quiz ${quizId} by user ${userId}.`); }
+        catch(accuracyError) { console.error("Error during AI accuracy check batch:", accuracyError); }
 
-        // Note: We don't necessarily need to `await Promise.all(accuracyPromises)`
-        // *before* updating the leaderboard or responding to the user,
-        // unless the user response *depends* on the accuracy check completing.
-        // Letting them run in the background improves response time for the user.
-        // However, wait for them if you *need* them done before proceeding.
-        // For now, let's wait to ensure logging happens before response,
-        // but consider the async approach if this endpoint becomes slow.
-        try {
-             await Promise.all(accuracyPromises);
-             console.log(`AI Accuracy checks completed for quiz ${quizId} submission by user ${userId}.`);
-        } catch(accuracyError) {
-            // This catch is primarily for programming errors within the map/getAiPrediction,
-            // as individual save errors are caught inside the map.
-            console.error("Error occurred during AI accuracy check batch:", accuracyError);
-            // Potentially inform the user or handle differently? For now, just log.
-        }
-        // --- End AI Accuracy Check ---
-
-
-        // 4. Get username
+        // 4. Get Username
         let username = "Unknown User";
         try {
-             const user = await User.findById(userId).select('username');
-             if (user) {
-                 username = user.username;
-             } else {
-                 console.warn(`User ID ${userId} not found in users collection during submission.`);
-                 // Maybe return an error if user *must* exist?
-                 // return res.status(404).json({ message: `User ID ${userId} not found.` });
-             }
-        } catch (userErr) {
-             console.error(`Could not fetch user ${userId} for leaderboard`, userErr);
-             // Decide if this is critical
-        }
+            const user = await User.findById(userId).select('username');
+            if (user) { username = user.username; }
+            else { console.warn(`User ID ${userId} not found during submission.`); }
+        } catch (userErr) { console.error(`Error fetching user ${userId} for leaderboard`, userErr); }
 
-        // 5. Update or Insert Leaderboard Entry
-        const updateData = {
-            // Fields present in both update and insert
-            userId: userId,
-            username: username, // Update username in case it changed
-            quizId: quizId,
-            totalQuestions: totalQuestions,
-            timestamp: new Date() // Update timestamp on every attempt
-        };
-
+        // 5. Update Leaderboard
+        const updateData = { userId, username, quizId, totalQuestions, timestamp: new Date() };
         let savedEntry;
         try {
              const existingEntry = await LeaderboardEntry.findOne({ userId: userId, quizId: quizId });
-
              if (existingEntry) {
-                 // Entry exists, update only if new score is higher
                  if (calculatedScore > existingEntry.score) {
-                     savedEntry = await LeaderboardEntry.findOneAndUpdate(
-                         { _id: existingEntry._id },
-                         { $set: { ...updateData, score: calculatedScore } }, // Add score to update
-                         { new: true } // Return the updated document
-                     );
+                     savedEntry = await LeaderboardEntry.findOneAndUpdate({ _id: existingEntry._id }, { $set: { ...updateData, score: calculatedScore } }, { new: true });
                      responseMessage = "Score calculated. Leaderboard updated with higher score.";
-                     console.log(`Leaderboard updated for ${username} on ${quizId}. New Score: ${calculatedScore}/${totalQuestions}`);
+                     console.log(`Leaderboard updated for ${username} on ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
                  } else {
-                     // Score not higher, potentially update timestamp/username if needed, but keep old score
-                     savedEntry = await LeaderboardEntry.findOneAndUpdate(
-                        { _id: existingEntry._id },
-                        { $set: { username: username, timestamp: new Date() } }, // Update non-score fields
-                        { new: true }
-                    );
+                     // Optionally update timestamp/username even if score isn't higher
+                      savedEntry = await LeaderboardEntry.findOneAndUpdate({ _id: existingEntry._id }, { $set: { username: username, timestamp: new Date() } }, { new: true });
                      responseMessage = "Score calculated. Previous score on leaderboard was higher or equal.";
-                     // console.log(`Leaderboard score not updated for ${username} on ${quizId}. Score ${calculatedScore} vs existing ${existingEntry.score}.`);
                  }
              } else {
-                 // No existing entry, create a new one
                  savedEntry = await LeaderboardEntry.create({ ...updateData, score: calculatedScore });
                  responseMessage = "Score calculated. New entry added to leaderboard.";
                  console.log(`New leaderboard entry for ${username} on ${quizId}. Score: ${calculatedScore}/${totalQuestions}`);
              }
         } catch (leaderboardError) {
-             console.error(`Error updating leaderboard for user ${userId}, quiz ${quizId}:`, leaderboardError);
-             // Don't fail the whole request, but maybe change the message?
-             responseMessage = "Score calculated, but failed to update leaderboard.";
-             // Potentially set savedEntry = null or an error indicator
+            console.error(`Error updating leaderboard for user ${userId}, quiz ${quizId}:`, leaderboardError);
+            responseMessage = "Score calculated, but failed to update leaderboard.";
         }
 
-        // 6. Respond to the user
-        res.json({
-            quizId: quizId,
-            score: calculatedScore,
-            totalQuestions: totalQuestions,
-            message: responseMessage,
-            // leaderboardEntry: savedEntry // Optional: send back the entry details
-        });
+        // 6. Respond
+        res.json({ quizId: quizId, score: calculatedScore, totalQuestions: totalQuestions, message: responseMessage });
 
     } catch (err) {
         console.error(`Error processing submission for quiz ${quizId}:`, err);
-        // Check for specific Mongoose errors if needed
-        if (err.name === 'CastError' && err.path === '_id') {
-            return res.status(400).json({ message: 'Invalid User ID format provided.' });
-        }
+        if (err.name === 'CastError' && err.path === '_id') { return res.status(400).json({ message: 'Invalid User ID format provided.' }); }
         res.status(500).json({ message: err.message || 'Error processing quiz submission' });
     }
 });

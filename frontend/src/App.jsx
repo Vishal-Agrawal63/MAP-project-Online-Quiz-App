@@ -11,6 +11,7 @@ import QuizPage from './pages/QuizPage';
 // ResultsPage is rendered inside QuizPage now, so no separate route needed unless you want direct access
 import LeaderboardPage from './pages/LeaderboardPage';
 import AiAccuracyPage from './pages/AiAccuracyPage'; // Import the new page
+import QuestionGeneratorPage from './pages/QuestionGeneratorPage'; // <-- Import
 
 // Component to protect routes that require login
 function ProtectedRoute({ children }) {
@@ -60,6 +61,13 @@ function App() {
               element={<ProtectedRoute><AiAccuracyPage /></ProtectedRoute>}
               // Or just element={<AiAccuracyPage />} if public
             />
+            
+                        {/* --- NEW ROUTE --- */}
+                        <Route
+              path="/generate-question" // Or choose another path e.g., /admin/generate
+              element={<ProtectedRoute><QuestionGeneratorPage /></ProtectedRoute>} // Protect it
+            />
+            {/* --- END NEW ROUTE --- */}
 
             {/* Fallback for unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />

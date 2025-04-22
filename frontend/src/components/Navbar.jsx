@@ -25,6 +25,7 @@ function Navbar() {
             <Link to="/leaderboard">Leaderboard</Link>
             {/* Add the link here */}
             <Link to="/ai-accuracy">AI Accuracy</Link>
+            <Link to="/generate-question">Generate Question</Link> {/* <-- Add link */}
             {/* Example: Conditional link for admin */}
             {/* {isAdmin && <Link to="/ai-accuracy">AI Accuracy</Link>} */}
             <div className="user-info">
