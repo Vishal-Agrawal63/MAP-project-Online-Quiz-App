@@ -99,7 +99,7 @@ Respond ONLY with the letter of the correct option (e.g., A, B, C, D). Do not in
         console.error('Error getting AI prediction:', error.response?.data || error.message);
         if (error.response) { console.error("Axios Error Details:", { status: error.response.status, data: error.response.data }); }
         return { aiPredictedAnswer: "Error Fetching", isAiCorrect: false, aiResponseRaw: error.message || "Unknown Axios Error", aiModelUsed: model };
-    }
+    }    
 }
 
 // --- Helper Function for AI Question Generation ---
